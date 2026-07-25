@@ -7,7 +7,7 @@
 import allure
 import pytest
 
-from utils.helpers import generate_order_payload, create_order, cancel_order
+from utils.helpers import generate_order_payload, create_order
 
 
 @allure.epic("QA Scooter API")
@@ -31,15 +31,13 @@ class TestCreateOrder:
         ],
     )
     @allure.title("Заказ создаётся с любым набором цветов и код ответа 201")
-    def test_create_order_with_color_returns_201(self, color):
+    def test_create_order_with_color_returns_201(self, color, order_cleanup):
         payload = generate_order_payload(color=color)
 
         response = create_order(payload)
+        order_cleanup.append(response.json()["track"])
 
-        try:
-            assert response.status_code == 201
-        finally:
-            cancel_order(response.json()["track"])
+        assert response.status_code == 201
 
     @pytest.mark.parametrize(
         "color",
@@ -57,12 +55,10 @@ class TestCreateOrder:
         ],
     )
     @allure.title("Тело ответа при создании заказа содержит track")
-    def test_create_order_with_color_returns_track(self, color):
+    def test_create_order_with_color_returns_track(self, color, order_cleanup):
         payload = generate_order_payload(color=color)
 
         response = create_order(payload)
+        order_cleanup.append(response.json().get("track"))
 
-        try:
-            assert "track" in response.json()
-        finally:
-            cancel_order(response.json()["track"])
+        assert "track" in response.json()

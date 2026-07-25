@@ -1,21 +1,11 @@
 """Тесты ручки PUT /api/v1/orders/accept/{id} — принять заказ.
 
 Дополнительное задание.
-
-Важно: в документации есть неточность — id заказа и id курьера нужно
-передавать в параметрах запроса (query params), а не в теле.
 """
 
 import allure
-import requests
 
-from utils.helpers import get_order_id_by_track
-from utils.urls import ORDERS_ACCEPT_URL
-
-
-@allure.step("Принять заказ")
-def accept_order(order_id, courier_id):
-    return requests.put(f"{ORDERS_ACCEPT_URL}/{order_id}", params={"courierId": courier_id}, timeout=20)
+from utils.helpers import get_order_id_by_track, accept_order
 
 
 @allure.epic("QA Scooter API")

@@ -15,6 +15,7 @@ from utils.urls import (
     ORDERS_URL,
     ORDERS_CANCEL_URL,
     ORDERS_TRACK_URL,
+    ORDERS_ACCEPT_URL,
 )
 
 
@@ -117,3 +118,15 @@ def get_order_id_by_track(track) -> int:
 @allure.step("Отменить заказ по треку")
 def cancel_order(track) -> requests.Response:
     return requests.post(ORDERS_CANCEL_URL, params={"track": track}, timeout=20)
+
+
+@allure.step("Принять заказ")
+def accept_order(order_id, courier_id) -> requests.Response:
+    """В документации есть неточность: id заказа и id курьера нужно
+    передавать в параметрах запроса (query params), а не в теле."""
+    return requests.put(f"{ORDERS_ACCEPT_URL}/{order_id}", params={"courierId": courier_id}, timeout=20)
+
+
+@allure.step("Получить заказ по номеру трека (без ожидания индексации)")
+def get_order_by_track(track) -> requests.Response:
+    return requests.get(ORDERS_TRACK_URL, params={"t": track}, timeout=20)

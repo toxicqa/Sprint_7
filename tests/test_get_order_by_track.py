@@ -4,15 +4,8 @@
 """
 
 import allure
-import requests
 
-from utils.helpers import wait_for_order_by_track
-from utils.urls import ORDERS_TRACK_URL
-
-
-@allure.step("Получить заказ по номеру трека")
-def get_order_by_track(track):
-    return requests.get(ORDERS_TRACK_URL, params={"t": track}, timeout=20)
+from utils.helpers import wait_for_order_by_track, get_order_by_track
 
 
 @allure.epic("QA Scooter API")
@@ -22,7 +15,7 @@ class TestGetOrderByTrack:
 
     @allure.title("Запрос с существующим треком возвращает код 200")
     def test_get_order_by_track_returns_200(self, order_track):
-        # используем ретраи: сразу после создания заказ иногда ещё не проиндексирован
+        # ретраи нужны: сразу после создания заказ иногда ещё не проиндексирован
         response = wait_for_order_by_track(order_track)
 
         assert response.status_code == 200

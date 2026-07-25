@@ -1,7 +1,15 @@
 """Общие фикстуры для всех тестов.
 
-Ключевое правило проекта: тестовые данные создаются перед тестом и
-удаляются после него, независимо от того, прошёл тест или упал.
+Правило: фикстуры отвечают только за подготовку предусловий и уборку после
+теста. Внутри фикстур нет проверок (assert) — иначе тест, который её
+использует, становится неатомарным: непонятно, упал он из-за проверяемой
+логики или из-за проблемы в самом предусловии.
+
+Для тестов, где создание курьера/заказа — сам предмет проверки (например,
+tests/test_create_courier.py), используются фикстуры-коллекторы
+courier_cleanup и order_cleanup: тест сам решает, что именно получилось
+создать, и складывает данные для уборки в список, а фикстура удаляет/отменяет
+их после теста.
 """
 
 import allure
@@ -19,25 +27,16 @@ from utils.helpers import (
 
 
 @pytest.fixture
-def courier_data():
-    """Просто уникальные данные курьера, без создания на сервере."""
-    return generate_courier_data()
-
-
-@pytest.fixture
 def registered_courier():
-    """Создаёт курьера на сервере и гарантированно удаляет его после теста.
-
-    Возвращает словарь с login/password/firstName и id курьера.
-    """
+    """Предусловие: на сервере уже есть курьер. Используется там, где
+    курьер — просто предпосылка теста (логин, принятие заказа), а не то,
+    что тест проверяет. Курьер гарантированно удаляется после теста."""
     data = generate_courier_data()
 
     with allure.step("Подготовка: создать курьера для теста"):
-        response = register_courier(data)
-        assert response.status_code == 201, "Не удалось создать курьера в фикстуре"
-
-    courier_id = get_courier_id(data["login"], data["password"])
-    data["id"] = courier_id
+        register_courier(data)
+        courier_id = get_courier_id(data["login"], data["password"])
+        data["id"] = courier_id
 
     yield data
 
@@ -47,16 +46,45 @@ def registered_courier():
 
 @pytest.fixture
 def order_track():
-    """Создаёт заказ и возвращает его track. После теста заказ отменяется,
-    чтобы не засорять тестовый стенд."""
+    """Предусловие: на сервере уже есть заказ. Используется там, где
+    заказ — просто предпосылка теста (принятие, поиск по треку), а не то,
+    что тест проверяет. Заказ отменяется после теста."""
     payload = generate_order_payload()
 
     with allure.step("Подготовка: создать заказ для теста"):
         response = create_order(payload)
-        assert response.status_code == 201, "Не удалось создать заказ в фикстуре"
         track = response.json()["track"]
 
     yield track
 
     with allure.step("Уборка: отменить заказ после теста"):
         cancel_order(track)
+
+
+@pytest.fixture
+def courier_cleanup():
+    """Для тестов, где создание курьера — предмет проверки: тест сам
+    добавляет в список (login, password) успешно созданных курьеров,
+    а фикстура удаляет их после теста."""
+    couriers = []
+
+    yield couriers
+
+    with allure.step("Уборка: удалить курьеров, созданных в тесте"):
+        for login, password in couriers:
+            courier_id = get_courier_id(login, password)
+            delete_courier(courier_id)
+
+
+@pytest.fixture
+def order_cleanup():
+    """Для тестов, где создание заказа — предмет проверки: тест сам
+    добавляет в список трек успешно созданного заказа, а фикстура
+    отменяет заказы после теста."""
+    tracks = []
+
+    yield tracks
+
+    with allure.step("Уборка: отменить заказы, созданные в тесте"):
+        for track in tracks:
+            cancel_order(track)
