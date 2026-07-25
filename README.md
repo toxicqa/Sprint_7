@@ -102,6 +102,3 @@ POST /api/v1/orders/cancel?track=...
 ```
 
 Это учтено в `utils/helpers.py` и в `tests/test_accept_order.py`.
-
----
-Проект сдан на ревью.
