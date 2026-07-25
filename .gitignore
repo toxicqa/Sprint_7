@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+reports/allure-results/
+.idea/
+
+# В репозиторий пушится только готовый allure-report (см. требования проекта),
+# сырые результаты (allure-results) в git не попадают.
